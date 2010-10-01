@@ -271,15 +271,15 @@ void srp_gen_sv( const char * username,
                  const unsigned char ** bytes_v, int * len_v )
 {
     BIGNUM * s  = BN_new();
-	BIGNUM * v  = BN_new();
-	BIGNUM * x  = 0;
-	BN_CTX *ctx = BN_CTX_new();
-    	
-	BN_rand(s, 32, -1, 0);
-	
-	x = calculate_x( s, username, password, len_password );
+    BIGNUM * v  = BN_new();
+    BIGNUM * x  = 0;
+    BN_CTX *ctx = BN_CTX_new();
+        
+    BN_rand(s, 32, -1, 0);
+    
+    x = calculate_x( s, username, password, len_password );
 
-	BN_mod_exp(v, g, x, N, ctx);
+    BN_mod_exp(v, g, x, N, ctx);
         
     *len_s   = BN_num_bytes(s);
     *len_v   = BN_num_bytes(v);
@@ -327,37 +327,37 @@ struct SRPVerifier *  srp_verifier_new( const char * username,
     memcpy( (char*)ver->username, username, ulen );
     
     ver->authenticated = 0;
-    	
+        
     /* SRP-6a safety check */
     BN_mod(tmp1, A, N, ctx);
     if ( !BN_is_zero(tmp1) )
-    {		
-		BN_rand(b, 256, -1, 0);
-		
-		/* B = kv + g^b */
-		BN_mul(tmp1, k, v, ctx);
-		BN_mod_exp(tmp2, g, b, N, ctx);
-		BN_add(B, tmp1, tmp2);
-		
-		u = H_nn(A,B);
-		
-		/* S = (A *(v^u)) ^ b */
-		BN_mod_exp(tmp1, v, u, N, ctx);
-		BN_mul(tmp2, A, tmp1, ctx);
-		BN_mod_exp(S, tmp2, b, N, ctx);
+    {        
+        BN_rand(b, 256, -1, 0);
+        
+        /* B = kv + g^b */
+        BN_mul(tmp1, k, v, ctx);
+        BN_mod_exp(tmp2, g, b, N, ctx);
+        BN_add(B, tmp1, tmp2);
+        
+        u = H_nn(A,B);
+        
+        /* S = (A *(v^u)) ^ b */
+        BN_mod_exp(tmp1, v, u, N, ctx);
+        BN_mul(tmp2, A, tmp1, ctx);
+        BN_mod_exp(S, tmp2, b, N, ctx);
 
-		hash_num(S, ver->session_key);
-		
-		calculate_M( ver->M, username, s, A, B, ver->session_key );
-		calculate_H_AMK( ver->H_AMK, A, ver->M, ver->session_key );
-		
+        hash_num(S, ver->session_key);
+        
+        calculate_M( ver->M, username, s, A, B, ver->session_key );
+        calculate_H_AMK( ver->H_AMK, A, ver->M, ver->session_key );
+        
         *len_B   = BN_num_bytes(B);
         *bytes_B = malloc( *len_B );
         
         BN_bn2bin( B, (unsigned char *) *bytes_B );
         
         ver->bytes_B = *bytes_B;
-	}
+    }
     else
     {
         *len_B   = 0;
@@ -441,7 +441,7 @@ struct SRPUser * srp_user_new( const char * username,
     memcpy((char *)usr->password, bytes_password, len_password);
     
     usr->bytes_A = 0;
-	
+    
     return usr;
 }
 
@@ -490,9 +490,9 @@ void  srp_user_start_authentication( struct SRPUser * usr, const char ** usernam
     BN_CTX  *ctx  = BN_CTX_new();
     
     BN_rand(usr->a, 256, -1, 0);
-		
+        
     BN_mod_exp(usr->A, g, usr->a, N, ctx);
-		
+        
     BN_CTX_free(ctx);
     
     *len_A   = BN_num_bytes(usr->A);
