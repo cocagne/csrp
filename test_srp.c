@@ -12,9 +12,9 @@
 
 unsigned long long get_usec()
 {
-	struct timeval t;
-	gettimeofday(&t, NULL);
-	return (((unsigned long long)t.tv_sec) * 1000000) + t.tv_usec;
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return (((unsigned long long)t.tv_sec) * 1000000) + t.tv_usec;
 }
 
 
@@ -99,11 +99,11 @@ int main( int argc, char * argv[] )
 cleanup:
         srp_verifier_delete( ver );
         srp_user_delete( usr );
-	}
-	
-	duration = get_usec() - start;
-	
-	printf("Usec per call: %d\n", (int)(duration / NITER));
+    }
+    
+    duration = get_usec() - start;
+    
+    printf("Usec per call: %d\n", (int)(duration / NITER));
     
     
     free( (char *)bytes_s );
