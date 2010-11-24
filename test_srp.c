@@ -65,7 +65,9 @@ int main( int argc, char * argv[] )
     }
 
     
-    srp_gen_sv( alg, ng_type, username, password, strlen(password), 
+    srp_gen_sv( alg, ng_type, username, 
+                (const unsigned char *)password, 
+                strlen(password), 
                 &bytes_s, &len_s, &bytes_v, &len_v, n_hex, g_hex );
     
 
@@ -74,7 +76,9 @@ int main( int argc, char * argv[] )
     
     for( i = 0; i < NITER; i++ )
     {
-        usr =  srp_user_new( alg, ng_type, username, password, strlen(password), n_hex, g_hex );
+        usr =  srp_user_new( alg, ng_type, username, 
+                             (const unsigned char *)password, 
+                             strlen(password), n_hex, g_hex );
 
         srp_user_start_authentication( usr, &auth_username, &bytes_A, &len_A );
 

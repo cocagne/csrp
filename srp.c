@@ -350,13 +350,12 @@ static void calculate_H_AMK( SRP_HashAlgorithm alg, unsigned char *dest, const B
 
 
 static void init_random()
-{
-    static int initialized = 0;
-    
-    if (initialized)
+{    
+    if (g_initialized)
         return;
     
-    initialized = 1;
+    g_initialized = 1;
+    
 #ifdef WIN32
     HCRYPTPROV wctx;
 #else
@@ -399,6 +398,14 @@ static void init_random()
  *  Exported Functions
  *
  ***********************************************************************************************************/
+
+void srp_random_seed( const unsigned char * random_data, int data_length )
+{
+    g_initialized = 1;
+
+    if (random_data)
+        RAND_seed( random_data, data_length );
+}
 
 
 void srp_gen_sv( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,

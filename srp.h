@@ -39,13 +39,18 @@
  * 
  * Usage:         Refer to test_srp.c for a demonstration
  * 
- * Note: 
- *    The SRP protocol does not mandate a specific hashing algorithm. This
- *    implementation uses SHA256 rather than SHA1 for additional security
- *    and the increased number of bytes in the resulting shared key. However,
- *    SHA256 is approximately 20% slower than SHA1. If speed is more important
- *    than the key length and/or added security, you may change it to SHA1.
+ * Notes:
+ *    This library allows multiple combinations of hashing algorithms and 
+ *    prime number constants. For authentication to succeed, the hash and
+ *    prime number constants must match between srp_gen_sv(), srp_user_new(),
+ *    and srp_verifier_new(). A recommended approach is to determine the
+ *    desired level of security for an application and globally define the
+ *    hash and prime number constants to the predetermined values.
  * 
+ *    As one might suspect, more bits means more security. As one might also
+ *    suspect, more bits also means more processing time. The test_srp.c 
+ *    program can be easily modified to profile various combinations of 
+ *    hash & prime number pairings.
  */
 
 #ifndef SRP_H
@@ -73,11 +78,35 @@ typedef enum
 } SRP_HashAlgorithm;
 
 
+/* This library will automatically seed the OpenSSL random number generator
+ * using cryptographically sound random data on Windows & Linux. If this is
+ * undesirable behavior or the host OS does not provide a /dev/urandom file, 
+ * this function may be called to seed the random number generator with 
+ * alternate data. 
+ * 
+ * Passing a null pointer to this function will cause this library to skip
+ * seeding the random number generator.
+ * 
+ * Notes: 
+ *    * This function is optional on Windows & Linux.
+ * 
+ *    * This function is mandatory on all other platforms. Although it
+ *      will appear to work on other platforms, this library uses the current
+ *      time of day to seed the random number generator. This is well known to
+ *      be insecure. 
+ * 
+ *    * When using this function, ensure the provided random data is
+ *      cryptographically strong.
+ */
+void srp_random_seed( const unsigned char * random_data, int data_length );
+
+
 /* Out: bytes_s, len_s, bytes_v, len_v
  * 
  * The caller is responsible for freeing the memory allocated for bytes_s and bytes_v
  * 
- * The n_hex and g_hex parameters should be 0 unless SRP_NG_CUSTOM is used for ng_type
+ * The n_hex and g_hex parameters should be 0 unless SRP_NG_CUSTOM is used for ng_type.
+ * If provided, they must contain ASCII text of the hexidecimal notation.
  */
 void srp_gen_sv( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
                  const unsigned char * password, int len_password,
