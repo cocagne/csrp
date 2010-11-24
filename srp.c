@@ -50,46 +50,24 @@ static int g_initialized = 0;
 
 typedef struct
 {
-    const char * n_hex;
-    const char * g_hex;
     BIGNUM     * N;
     BIGNUM     * g;
-    int          should_delete;
 } NGConstant;
 
-static NGConstant * new_ng( const char * n_hex, const char * g_hex )
+struct NGHex 
 {
-    NGConstant * ng   = (NGConstant *) malloc( sizeof(NGConstant) );
-    ng->n_hex         = n_hex;
-    ng->g_hex         = g_hex;
-    ng->N             = BN_new();
-    ng->g             = BN_new();
-    ng->should_delete = 1;
-        
-    BN_hex2bn( &ng->N, ng->n_hex );
-    BN_hex2bn( &ng->g, ng->g_hex );
-    
-    return ng;
-}
-
-static void delete_ng( NGConstant * ng )
-{
-    BN_free( ng->N );
-    BN_free( ng->g );
-    ng->N = 0;
-    ng->g = 0;
-    free(ng);
-}
-
+    const char * n_hex;
+    const char * g_hex;
+};
 
 /* All constants here were pulled from Appendix A of RFC 5054 */
-static NGConstant global_Ng_array[] = {
+static struct NGHex global_Ng_constants[] = {
  { /* 1024 */
    "EEAF0AB9ADB38DD69C33F80AFA8FC5E86072618775FF3C0B9EA2314C9C256576D674DF7496"
    "EA81D3383B4813D692C6E0E0D5D8E250B98BE48E495C1D6089DAD15DC7D7B46154D6B6CE8E"
    "F4AD69B15D4982559B297BCF1885C529F566660E57EC68EDBC3C05726CC02FD4CBF4976EAA"
    "9AFD5138FE8376435B9FC61D2FC0EB06E3",
-   "2", 0, 0, 0
+   "2"
  },
  { /* 2048 */
    "AC6BDB41324A9A9BF166DE5E1389582FAF72B6651987EE07FC3192943DB56050A37329CBB4"
@@ -99,7 +77,7 @@ static NGConstant global_Ng_array[] = {
    "8717461A5B9D32E688F87748544523B524B0D57D5EA77A2775D2ECFA032CFBDBF52FB37861"
    "60279004E57AE6AF874E7303CE53299CCC041C7BC308D82A5698F3A8D0C38271AE35F8E9DB"
    "FBB694B5C803D89F7AE435DE236D525F54759B65E372FCD68EF20FA7111F9E4AFF73",
-   "2", 0, 0, 0
+   "2"
  },
  { /* 4096 */
    "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E08"
@@ -121,10 +99,39 @@ static NGConstant global_Ng_array[] = {
    "233BA186515BE7ED1F612970CEE2D7AFB81BDD762170481CD0069127"
    "D5B05AA993B4EA988D8FDDC186FFB7DC90A6C08F4DF435C934063199"
    "FFFFFFFFFFFFFFFF",
-   "5", 0, 0, 0
+   "5"
  },
- {0,0,0,0,0} /* null sentinel */
+ {0,0} /* null sentinel */
 };
+
+
+static NGConstant * new_ng( SRP_NGType ng_type, const char * n_hex, const char * g_hex )
+{
+    NGConstant * ng   = (NGConstant *) malloc( sizeof(NGConstant) );
+    ng->N             = BN_new();
+    ng->g             = BN_new();
+
+    if ( ng_type != SRP_NG_CUSTOM )
+    {
+        n_hex = global_Ng_constants[ ng_type ].n_hex;
+        g_hex = global_Ng_constants[ ng_type ].g_hex;
+    }
+        
+    BN_hex2bn( &ng->N, n_hex );
+    BN_hex2bn( &ng->g, g_hex );
+    
+    return ng;
+}
+
+static void delete_ng( NGConstant * ng )
+{
+    BN_free( ng->N );
+    BN_free( ng->g );
+    ng->N = 0;
+    ng->g = 0;
+    free(ng);
+}
+
 
 
 typedef union 
@@ -341,25 +348,15 @@ static void calculate_H_AMK( SRP_HashAlgorithm alg, unsigned char *dest, const B
     hash_final( alg, &ctx, dest );
 }
 
-static NGConstant * get_ng( SRP_NGType ng_type, const char * n_hex, const char * g_hex )
+
+static void init_random()
 {
-    if (ng_type > SRP_NG_CUSTOM || ng_type < SRP_NG_1024)
-        return 0;
+    static int initialized = 0;
     
-    if ( ng_type == SRP_NG_CUSTOM )
-        return new_ng( n_hex, g_hex );
-    else
-        return &global_Ng_array[ ng_type ];
-}
-
-/***********************************************************************************************************
- *
- *  Exported Functions
- *
- ***********************************************************************************************************/
-
-void srp_init()
-{
+    if (initialized)
+        return;
+    
+    initialized = 1;
 #ifdef WIN32
     HCRYPTPROV wctx;
 #else
@@ -368,20 +365,6 @@ void srp_init()
     
     unsigned char buff[32];
 
-    NGConstant *ng = &global_Ng_array[0];
-    
-    while( ng->n_hex )
-    {
-        ng->N = BN_new();
-        ng->g = BN_new();
-        
-        BN_hex2bn( &ng->N, ng->n_hex );
-        BN_hex2bn( &ng->g, ng->g_hex );
-        
-        ++ng;
-    }
-    
-    //k = H_nn(N,g);
     
 #ifdef WIN32
 
@@ -408,32 +391,14 @@ void srp_init()
 #endif
     
     RAND_seed( buff, sizeof(buff) );
-        
-    g_initialized = 1;
 }
 
 
-void srp_fini()
-{
-    g_initialized = 0;
-
-    NGConstant *ng = &global_Ng_array[0];
-    
-    while( ng->n_hex )
-    {
-        BN_free( ng->N );
-        BN_free( ng->g );
-        ng->N = 0;
-        ng->g = 0;
-        ++ng;
-    }
-}
-
-
-int srp_is_initialized()
-{
-    return g_initialized;
-}
+/***********************************************************************************************************
+ *
+ *  Exported Functions
+ *
+ ***********************************************************************************************************/
 
 
 void srp_gen_sv( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
@@ -446,8 +411,10 @@ void srp_gen_sv( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * usernam
     BIGNUM     * v   = BN_new();
     BIGNUM     * x   = 0;
     BN_CTX     * ctx = BN_CTX_new();
-    NGConstant * ng  = get_ng( ng_type, n_hex, g_hex );
-        
+    NGConstant * ng  = new_ng( ng_type, n_hex, g_hex );
+
+    init_random(); /* Only happens once */
+    
     BN_rand(s, 32, -1, 0);
     
     x = calculate_x( alg, s, username, password, len_password );
@@ -463,6 +430,7 @@ void srp_gen_sv( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * usernam
     BN_bn2bin(s, (unsigned char *) *bytes_s);
     BN_bn2bin(v, (unsigned char *) *bytes_v);
         
+    delete_ng( ng );
     BN_free(s);
     BN_free(v);
     BN_free(x);
@@ -494,9 +462,11 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
     BIGNUM     *tmp2 = BN_new();
     BN_CTX     *ctx  = BN_CTX_new();
     int         ulen = strlen(username) + 1;
-    NGConstant *ng   = get_ng( ng_type, n_hex, g_hex );
+    NGConstant *ng   = new_ng( ng_type, n_hex, g_hex );
     
     struct SRPVerifier * ver = (struct SRPVerifier *) malloc( sizeof(struct SRPVerifier) );
+
+    init_random(); /* Only happens once */
     
     ver->username = (char *) malloc( ulen );
     ver->hash_alg = alg;
@@ -564,8 +534,7 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
 
 void srp_verifier_delete( struct SRPVerifier * ver )
 {
-    if ( ver->ng && ver->ng->should_delete )
-        delete_ng( ver->ng );
+    delete_ng( ver->ng );
     free( (char *) ver->username );
     free( (unsigned char *) ver->bytes_B );
     free( ver );
@@ -619,9 +588,11 @@ struct SRPUser * srp_user_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const 
 {
     struct SRPUser  *usr  = (struct SRPUser *) malloc( sizeof(struct SRPUser) );
     int              ulen = strlen(username) + 1;
+
+    init_random(); /* Only happens once */
     
     usr->hash_alg = alg;
-    usr->ng       = get_ng( ng_type, n_hex, g_hex );
+    usr->ng       = new_ng( ng_type, n_hex, g_hex );
     
     usr->a = BN_new();
     usr->A = BN_new();
@@ -647,8 +618,7 @@ void srp_user_delete( struct SRPUser * usr )
     BN_free( usr->A );
     BN_free( usr->S );
     
-    if ( usr->ng && usr->ng->should_delete )
-        delete_ng( usr->ng );
+    delete_ng( usr->ng );
     
     free((char *)usr->username);
     free((char *)usr->password);

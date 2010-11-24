@@ -51,15 +51,6 @@
 #ifndef SRP_H
 #define SRP_H
 
-/* srp_init() must be called prior to usage of any other srp_* functions.
- * and a matching srp_fini() will clean up all memory allocated by srp_init().
- */
-void srp_init();
-void srp_fini();
-
-/* Returns 1 if srp_init() if the library is initialized */
-int  srp_is_initialized(); 
-
 
 struct SRPVerifier;
 struct SRPUser;

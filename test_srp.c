@@ -9,7 +9,7 @@
 
 #define NITER          100
 #define TEST_HASH      SRP_SHA1
-#define TEST_NG        SRP_NG_CUSTOM
+#define TEST_NG        SRP_NG_2048
 
 unsigned long long get_usec()
 {
@@ -64,7 +64,6 @@ int main( int argc, char * argv[] )
         g_hex = test_g_hex;
     }
 
-    srp_init(NULL,0);
     
     srp_gen_sv( alg, ng_type, username, password, strlen(password), 
                 &bytes_s, &len_s, &bytes_v, &len_v, n_hex, g_hex );
@@ -127,8 +126,6 @@ cleanup:
     
     free( (char *)bytes_s );
     free( (char *)bytes_v );
-    
-    srp_fini();
         
     return 0;
 }
