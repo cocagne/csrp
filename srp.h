@@ -51,8 +51,6 @@
 #ifndef SRP_H
 #define SRP_H
 
-#define SRP_SHA256_DIGEST_LENGTH 32
-
 /* srp_init() must be called prior to usage of any other srp_* functions.
  * and a matching srp_fini() will clean up all memory allocated by srp_init().
  */
@@ -66,26 +64,49 @@ int  srp_is_initialized();
 struct SRPVerifier;
 struct SRPUser;
 
+typedef enum
+{
+    SRP_NG_1024,
+    SRP_NG_2048,
+    SRP_NG_4096,
+    SRP_NG_CUSTOM
+} SRP_NGType;
+
+typedef enum 
+{
+    SRP_SHA1, 
+    SRP_SHA224, 
+    SRP_SHA256,
+    SRP_SHA384, 
+    SRP_SHA512
+} SRP_HashAlgorithm;
+
 
 /* Out: bytes_s, len_s, bytes_v, len_v
  * 
  * The caller is responsible for freeing the memory allocated for bytes_s and bytes_v
+ * 
+ * The n_hex and g_hex parameters should be 0 unless SRP_NG_CUSTOM is used for ng_type
  */
-void srp_gen_sv( const char * username,
+void srp_gen_sv( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
                  const unsigned char * password, int len_password,
                  const unsigned char ** bytes_s, int * len_s, 
-                 const unsigned char ** bytes_v, int * len_v );
+                 const unsigned char ** bytes_v, int * len_v,
+                 const char * n_hex, const char * g_hex );
 
 
 /* Out: bytes_B, len_B.
  * 
  * On failure, bytes_B will be set to NULL and len_B will be set to 0
+ * 
+ * The n_hex and g_hex parameters should be 0 unless SRP_NG_CUSTOM is used for ng_type
  */
-struct SRPVerifier *  srp_verifier_new( const char * username,
+struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
                                         const unsigned char * bytes_s, int len_s, 
                                         const unsigned char * bytes_v, int len_v,
                                         const unsigned char * bytes_A, int len_A,
-                                        const unsigned char ** bytes_B, int * len_B);
+                                        const unsigned char ** bytes_B, int * len_B,
+                                        const char * n_hex, const char * g_hex );
 
 
 void                  srp_verifier_delete( struct SRPVerifier * ver );
@@ -96,20 +117,24 @@ int                   srp_verifier_is_authenticated( struct SRPVerifier * ver );
 
 const char *          srp_verifier_get_username( struct SRPVerifier * ver );
 
+/* key_length may be null */
+const unsigned char * srp_verifier_get_session_key( struct SRPVerifier * ver, int * key_length );
 
-/* Key length is SRP_SHA256_DIGEST_LENGTH */
-const unsigned char * srp_verifier_get_session_key( struct SRPVerifier * ver );
+
+int                   srp_verifier_get_session_key_length( struct SRPVerifier * ver );
 
 
-/* user_M must be exactly SRP_SHA256_DIGEST_LENGTH bytes in size */
+/* user_M must be exactly srp_verifier_get_session_key_length() bytes in size */
 void                  srp_verifier_verify_session( struct SRPVerifier * ver,
                                                    const unsigned char * user_M, 
                                                    const unsigned char ** bytes_HAMK );
 
 /*******************************************************************************/
 
-struct SRPUser *      srp_user_new( const char * username, 
-                                    const unsigned char * bytes_password, int len_password );
+/* The n_hex and g_hex parameters should be 0 unless SRP_NG_CUSTOM is used for ng_type */
+struct SRPUser *      srp_user_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
+                                    const unsigned char * bytes_password, int len_password,
+                                    const char * n_hex, const char * g_hex );
                                     
 void                  srp_user_delete( struct SRPUser * usr );
 
@@ -118,20 +143,23 @@ int                   srp_user_is_authenticated( struct SRPUser * usr);
 
 const char *          srp_user_get_username( struct SRPUser * usr );
 
-/* Key length is SRP_SHA256_DIGEST_LENGTH */
-const unsigned char * srp_user_get_session_key( struct SRPUser * usr );
+/* key_length may be null */
+const unsigned char * srp_user_get_session_key( struct SRPUser * usr, int * key_length );
+
+int                   srp_user_get_session_key_length( struct SRPUser * usr );
 
 /* Output: username, bytes_A, len_A */
 void                  srp_user_start_authentication( struct SRPUser * usr, const char ** username, 
                                                      const unsigned char ** bytes_A, int * len_A );
 
-/* Output: bytes_M. Buffer length is SRP_SHA256_DIGEST_LENGTH */
+/* Output: bytes_M, len_M  (len_M may be null and will always be 
+ *                          srp_user_get_session_key_length() bytes in size) */
 void                  srp_user_process_challenge( struct SRPUser * usr, 
                                                   const unsigned char * bytes_s, int len_s, 
                                                   const unsigned char * bytes_B, int len_B,
-                                                  const unsigned char ** bytes_M );
+                                                  const unsigned char ** bytes_M, int * len_M );
                                                   
-/* bytes_HAMK must be exactly SRP_SHA256_DIGEST_LENGTH bytes in size */
+/* bytes_HAMK must be exactly srp_user_get_session_key_length() bytes in size */
 void                  srp_user_verify_session( struct SRPUser * usr, const unsigned char * bytes_HAMK );
 
 #endif /* Include Guard */
