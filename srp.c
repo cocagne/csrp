@@ -33,7 +33,6 @@
     #include <sys/time.h>
 #endif
 
-#include <alloca.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -252,10 +251,11 @@ static BIGNUM * H_nn( SRP_HashAlgorithm alg, const BIGNUM * n1, const BIGNUM * n
     int             len_n1 = BN_num_bytes(n1);
     int             len_n2 = BN_num_bytes(n2);
     int             nbytes = len_n1 + len_n2;
-    unsigned char * bin    = (unsigned char *) alloca( nbytes );
+    unsigned char * bin    = (unsigned char *) malloc( nbytes );
     BN_bn2bin(n1, bin);
     BN_bn2bin(n2, bin + len_n1);
     hash( alg, bin, nbytes, buff );
+    free(bin);
     return BN_bin2bn(buff, hash_length(alg), NULL);
 }
 
@@ -264,10 +264,11 @@ static BIGNUM * H_ns( SRP_HashAlgorithm alg, const BIGNUM * n, const unsigned ch
     unsigned char   buff[ SHA512_DIGEST_LENGTH ];
     int             len_n  = BN_num_bytes(n);
     int             nbytes = len_n + len_bytes;
-    unsigned char * bin    = (unsigned char *) alloca( nbytes );
+    unsigned char * bin    = (unsigned char *) malloc( nbytes );
     BN_bn2bin(n, bin);
     memcpy( bin + len_n, bytes, len_bytes );
     hash( alg, bin, nbytes, buff );
+    free(bin);
     return BN_bin2bn(buff, hash_length(alg), NULL);
 }
     
@@ -290,17 +291,19 @@ static BIGNUM * calculate_x( SRP_HashAlgorithm alg, const BIGNUM * salt, const c
 static void update_hash_n( SRP_HashAlgorithm alg, HashCTX *ctx, const BIGNUM * n )
 {
     unsigned long len = BN_num_bytes(n);
-    unsigned char * n_bytes = (unsigned char *) alloca( len );
+    unsigned char * n_bytes = (unsigned char *) malloc( len );
     BN_bn2bin(n, n_bytes);
     hash_update(alg, ctx, n_bytes, len);
+    free(n_bytes);
 }
 
 static void hash_num( SRP_HashAlgorithm alg, const BIGNUM * n, unsigned char * dest )
 {
     int             nbytes = BN_num_bytes(n);
-    unsigned char * bin    = (unsigned char *) alloca( nbytes );
+    unsigned char * bin    = (unsigned char *) malloc( nbytes );
     BN_bn2bin(n, bin);
     hash( alg, bin, nbytes, dest );
+    free(bin);
 }
 
 static void calculate_M( SRP_HashAlgorithm alg, NGConstant *ng, unsigned char * dest, const char * I, const BIGNUM * s,
