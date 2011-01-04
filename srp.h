@@ -42,7 +42,8 @@
  * Notes:
  *    This library allows multiple combinations of hashing algorithms and 
  *    prime number constants. For authentication to succeed, the hash and
- *    prime number constants must match between srp_gen_sv(), srp_user_new(),
+ *    prime number constants must match between 
+ *    srp_create_salted_verification_key(), srp_user_new(),
  *    and srp_verifier_new(). A recommended approach is to determine the
  *    desired level of security for an application and globally define the
  *    hash and prime number constants to the predetermined values.
@@ -108,11 +109,12 @@ void srp_random_seed( const unsigned char * random_data, int data_length );
  * The n_hex and g_hex parameters should be 0 unless SRP_NG_CUSTOM is used for ng_type.
  * If provided, they must contain ASCII text of the hexidecimal notation.
  */
-void srp_gen_sv( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
-                 const unsigned char * password, int len_password,
-                 const unsigned char ** bytes_s, int * len_s, 
-                 const unsigned char ** bytes_v, int * len_v,
-                 const char * n_hex, const char * g_hex );
+void srp_create_salted_verification_key( SRP_HashAlgorithm alg, 
+                                         SRP_NGType ng_type, const char * username,
+                                         const unsigned char * password, int len_password,
+                                         const unsigned char ** bytes_s, int * len_s, 
+                                         const unsigned char ** bytes_v, int * len_v,
+                                         const char * n_hex, const char * g_hex );
 
 
 /* Out: bytes_B, len_B.

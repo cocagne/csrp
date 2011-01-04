@@ -411,11 +411,12 @@ void srp_random_seed( const unsigned char * random_data, int data_length )
 }
 
 
-void srp_gen_sv( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
-                 const unsigned char * password, int len_password,
-                 const unsigned char ** bytes_s, int * len_s, 
-                 const unsigned char ** bytes_v, int * len_v,
-                 const char * n_hex, const char * g_hex )
+void srp_create_salted_verification_key( SRP_HashAlgorithm alg, 
+                                         SRP_NGType ng_type, const char * username,
+                                         const unsigned char * password, int len_password,
+                                         const unsigned char ** bytes_s, int * len_s, 
+                                         const unsigned char ** bytes_v, int * len_v,
+                                         const char * n_hex, const char * g_hex )
 {
     BIGNUM     * s   = BN_new();
     BIGNUM     * v   = BN_new();
