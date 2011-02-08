@@ -9,7 +9,7 @@
 
 #define NITER          100
 #define TEST_HASH      SRP_SHA1
-#define TEST_NG        SRP_NG_2048
+#define TEST_NG        SRP_NG_1024
 
 unsigned long long get_usec()
 {
@@ -56,7 +56,7 @@ int main( int argc, char * argv[] )
     const char * g_hex         = 0;
     
     SRP_HashAlgorithm alg     = TEST_HASH;
-    SRP_NGType        ng_type = TEST_NG;
+    SRP_NGType        ng_type = SRP_NG_8192; //TEST_NG;
     
     if (ng_type == SRP_NG_CUSTOM)
     {
@@ -65,7 +65,7 @@ int main( int argc, char * argv[] )
     }
 
     
-    srp_gen_sv( alg, ng_type, username, 
+    srp_create_salted_verification_key( alg, ng_type, username, 
                 (const unsigned char *)password, 
                 strlen(password), 
                 &bytes_s, &len_s, &bytes_v, &len_v, n_hex, g_hex );

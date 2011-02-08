@@ -66,6 +66,7 @@ typedef enum
     SRP_NG_1024,
     SRP_NG_2048,
     SRP_NG_4096,
+    SRP_NG_8192,
     SRP_NG_CUSTOM
 } SRP_NGType;
 
