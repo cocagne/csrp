@@ -150,6 +150,9 @@ static NGConstant * new_ng( SRP_NGType ng_type, const char * n_hex, const char *
     ng->N             = BN_new();
     ng->g             = BN_new();
 
+    if( !ng || !ng->N || !ng->g )
+       return 0;
+
     if ( ng_type != SRP_NG_CUSTOM )
     {
         n_hex = global_Ng_constants[ ng_type ].n_hex;
@@ -164,11 +167,14 @@ static NGConstant * new_ng( SRP_NGType ng_type, const char * n_hex, const char *
 
 static void delete_ng( NGConstant * ng )
 {
-    BN_free( ng->N );
-    BN_free( ng->g );
-    ng->N = 0;
-    ng->g = 0;
-    free(ng);
+   if (ng)
+   {
+      BN_free( ng->N );
+      BN_free( ng->g );
+      ng->N = 0;
+      ng->g = 0;
+      free(ng);
+   }
 }
 
 
@@ -292,6 +298,8 @@ static BIGNUM * H_nn( SRP_HashAlgorithm alg, const BIGNUM * n1, const BIGNUM * n
     int             len_n2 = BN_num_bytes(n2);
     int             nbytes = len_n1 + len_n2;
     unsigned char * bin    = (unsigned char *) malloc( nbytes );
+    if (!bin)
+       return 0;
     BN_bn2bin(n1, bin);
     BN_bn2bin(n2, bin + len_n1);
     hash( alg, bin, nbytes, buff );
@@ -305,6 +313,8 @@ static BIGNUM * H_ns( SRP_HashAlgorithm alg, const BIGNUM * n, const unsigned ch
     int             len_n  = BN_num_bytes(n);
     int             nbytes = len_n + len_bytes;
     unsigned char * bin    = (unsigned char *) malloc( nbytes );
+    if (!bin)
+       return 0;
     BN_bn2bin(n, bin);
     memcpy( bin + len_n, bytes, len_bytes );
     hash( alg, bin, nbytes, buff );
@@ -332,6 +342,8 @@ static void update_hash_n( SRP_HashAlgorithm alg, HashCTX *ctx, const BIGNUM * n
 {
     unsigned long len = BN_num_bytes(n);
     unsigned char * n_bytes = (unsigned char *) malloc( len );
+    if (!n_bytes)
+       return;
     BN_bn2bin(n, n_bytes);
     hash_update(alg, ctx, n_bytes, len);
     free(n_bytes);
@@ -341,6 +353,8 @@ static void hash_num( SRP_HashAlgorithm alg, const BIGNUM * n, unsigned char * d
 {
     int             nbytes = BN_num_bytes(n);
     unsigned char * bin    = (unsigned char *) malloc( nbytes );
+    if(!bin)
+       return;
     BN_bn2bin(n, bin);
     hash( alg, bin, nbytes, dest );
     free(bin);
@@ -464,11 +478,17 @@ void srp_create_salted_verification_key( SRP_HashAlgorithm alg,
     BN_CTX     * ctx = BN_CTX_new();
     NGConstant * ng  = new_ng( ng_type, n_hex, g_hex );
 
+    if( !s || !v || !ctx || !ng )
+       goto cleanup_and_exit;
+
     init_random(); /* Only happens once */
     
     BN_rand(s, 32, -1, 0);
     
     x = calculate_x( alg, s, username, password, len_password );
+
+    if( !x )
+       goto cleanup_and_exit;
 
     BN_mod_exp(v, ng->g, x, ng->N, ctx);
         
@@ -477,10 +497,14 @@ void srp_create_salted_verification_key( SRP_HashAlgorithm alg,
     
     *bytes_s = (const unsigned char *) malloc( *len_s );
     *bytes_v = (const unsigned char *) malloc( *len_v );
+
+    if (!bytes_s || !bytes_v)
+       goto cleanup_and_exit;
     
     BN_bn2bin(s, (unsigned char *) *bytes_s);
     BN_bn2bin(v, (unsigned char *) *bytes_v);
-        
+    
+ cleanup_and_exit:
     delete_ng( ng );
     BN_free(s);
     BN_free(v);
@@ -514,14 +538,30 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
     BN_CTX     *ctx  = BN_CTX_new();
     int         ulen = strlen(username) + 1;
     NGConstant *ng   = new_ng( ng_type, n_hex, g_hex );
+
+    *len_B   = 0;
+    *bytes_B = 0;
+    
+    if( !s || !v || !A || !B || !S || !b || !tmp1 || !tmp2 || !ctx || !ng )
+       goto cleanup_and_exit;
     
     struct SRPVerifier * ver = (struct SRPVerifier *) malloc( sizeof(struct SRPVerifier) );
+
+    if (!ver)
+       goto cleanup_and_exit;
 
     init_random(); /* Only happens once */
     
     ver->username = (char *) malloc( ulen );
     ver->hash_alg = alg;
     ver->ng       = ng;
+
+    if (!ver->username)
+    {
+       free(ver);
+       ver = 0;
+       goto cleanup_and_exit;
+    }
     
     memcpy( (char*)ver->username, username, ulen );
     
@@ -530,41 +570,46 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
     /* SRP-6a safety check */
     BN_mod(tmp1, A, ng->N, ctx);
     if ( !BN_is_zero(tmp1) )
-    {        
-        BN_rand(b, 256, -1, 0);
-        
-        k = H_nn(alg, ng->N, ng->g);
-        
-        /* B = kv + g^b */
-        BN_mul(tmp1, k, v, ctx);
-        BN_mod_exp(tmp2, ng->g, b, ng->N, ctx);
-        BN_add(B, tmp1, tmp2);
-        
-        u = H_nn(alg, A, B);
-        
-        /* S = (A *(v^u)) ^ b */
-        BN_mod_exp(tmp1, v, u, ng->N, ctx);
-        BN_mul(tmp2, A, tmp1, ctx);
-        BN_mod_exp(S, tmp2, b, ng->N, ctx);
-
-        hash_num(alg, S, ver->session_key);
-        
-        calculate_M( alg, ng, ver->M, username, s, A, B, ver->session_key );
-        calculate_H_AMK( alg, ver->H_AMK, A, ver->M, ver->session_key );
-        
-        *len_B   = BN_num_bytes(B);
-        *bytes_B = malloc( *len_B );
-        
-        BN_bn2bin( B, (unsigned char *) *bytes_B );
-        
-        ver->bytes_B = *bytes_B;
-    }
-    else
     {
-        *len_B   = 0;
-        *bytes_B = NULL;
+       BN_rand(b, 256, -1, 0);
+       
+       k = H_nn(alg, ng->N, ng->g);
+       
+       /* B = kv + g^b */
+       BN_mul(tmp1, k, v, ctx);
+       BN_mod_exp(tmp2, ng->g, b, ng->N, ctx);
+       BN_add(B, tmp1, tmp2);
+       
+       u = H_nn(alg, A, B);
+       
+       /* S = (A *(v^u)) ^ b */
+       BN_mod_exp(tmp1, v, u, ng->N, ctx);
+       BN_mul(tmp2, A, tmp1, ctx);
+       BN_mod_exp(S, tmp2, b, ng->N, ctx);
+       
+       hash_num(alg, S, ver->session_key);
+       
+       calculate_M( alg, ng, ver->M, username, s, A, B, ver->session_key );
+       calculate_H_AMK( alg, ver->H_AMK, A, ver->M, ver->session_key );
+       
+       *len_B   = BN_num_bytes(B);
+       *bytes_B = malloc( *len_B );
+       
+       if( !*bytes_B )
+       {
+          free( (void*) ver->username );
+          free( ver );
+          ver = 0;
+          *len_B = 0;
+          goto cleanup_and_exit;
+       }
+       
+       BN_bn2bin( B, (unsigned char *) *bytes_B );
+          
+       ver->bytes_B = *bytes_B;
     }
     
+ cleanup_and_exit:
     BN_free(s);
     BN_free(v);
     BN_free(A);
@@ -585,10 +630,13 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
 
 void srp_verifier_delete( struct SRPVerifier * ver )
 {
-    delete_ng( ver->ng );
-    free( (char *) ver->username );
-    free( (unsigned char *) ver->bytes_B );
-    free( ver );
+   if (ver)
+   {
+      delete_ng( ver->ng );
+      free( (char *) ver->username );
+      free( (unsigned char *) ver->bytes_B );
+      free( ver );
+   }
 }
 
 
@@ -640,6 +688,9 @@ struct SRPUser * srp_user_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const 
     struct SRPUser  *usr  = (struct SRPUser *) malloc( sizeof(struct SRPUser) );
     int              ulen = strlen(username) + 1;
 
+    if (!usr)
+       goto err_exit;
+
     init_random(); /* Only happens once */
     
     usr->hash_alg = alg;
@@ -648,10 +699,16 @@ struct SRPUser * srp_user_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const 
     usr->a = BN_new();
     usr->A = BN_new();
     usr->S = BN_new();
+
+    if (!usr->ng || !usr->a || !usr->A || !usr->S)
+       goto err_exit;
     
     usr->username     = (const char *) malloc(ulen);
     usr->password     = (const unsigned char *) malloc(len_password);
     usr->password_len = len_password;
+
+    if (!usr->username || !usr->password)
+       goto err_exit;
     
     memcpy((char *)usr->username, username,       ulen);
     memcpy((char *)usr->password, bytes_password, len_password);
@@ -659,25 +716,43 @@ struct SRPUser * srp_user_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const 
     usr->bytes_A = 0;
     
     return usr;
+
+ err_exit:
+    if (usr)
+    {
+       BN_free(usr->a);
+       BN_free(usr->A);
+       BN_free(usr->S);
+       if (usr->username)
+          free((void*)usr->username);
+       if (usr->password)
+          free((void*)usr->password);
+       free(usr);
+    }
+    
+    return 0;
 }
 
 
 
 void srp_user_delete( struct SRPUser * usr )
 {
-    BN_free( usr->a );
-    BN_free( usr->A );
-    BN_free( usr->S );
-    
-    delete_ng( usr->ng );
-    
-    free((char *)usr->username);
-    free((char *)usr->password);
-    
-    if (usr->bytes_A) 
-        free( (char *)usr->bytes_A );
-    
-    free( usr );
+   if( usr )
+   {
+      BN_free( usr->a );
+      BN_free( usr->A );
+      BN_free( usr->S );
+      
+      delete_ng( usr->ng );
+      
+      free((char *)usr->username);
+      free((char *)usr->password);
+      
+      if (usr->bytes_A) 
+         free( (char *)usr->bytes_A );
+      
+      free( usr );
+   }
 }
 
 
@@ -724,6 +799,14 @@ void  srp_user_start_authentication( struct SRPUser * usr, const char ** usernam
     
     *len_A   = BN_num_bytes(usr->A);
     *bytes_A = malloc( *len_A );
+
+    if (!*bytes_A)
+    {
+       *len_A = 0;
+       *bytes_A = 0;
+       *username = 0;
+       return;
+    }
         
     BN_bn2bin( usr->A, (unsigned char *) *bytes_A );
     
@@ -748,12 +831,27 @@ void  srp_user_process_challenge( struct SRPUser * usr,
     BIGNUM *tmp2 = BN_new();
     BIGNUM *tmp3 = BN_new();
     BN_CTX *ctx  = BN_CTX_new();
+
+    *len_M = 0;
+    *bytes_M = 0;
+
+    if( !s || !B || !v || !tmp1 || !tmp2 || !tmp3 || !ctx )
+       goto cleanup_and_exit;
     
     u = H_nn(usr->hash_alg, usr->A, B);
+
+    if (!u)
+       goto cleanup_and_exit;
     
     x = calculate_x( usr->hash_alg, s, usr->username, usr->password, usr->password_len );
+
+    if (!x)
+       goto cleanup_and_exit;
     
     k = H_nn(usr->hash_alg, usr->ng->N, usr->ng->g);
+
+    if (!k)
+       goto cleanup_and_exit;
     
     /* SRP-6a safety check */
     if ( !BN_is_zero(B) && !BN_is_zero(u) )
@@ -783,6 +881,8 @@ void  srp_user_process_challenge( struct SRPUser * usr,
         if (len_M) 
             *len_M   = 0;
     }
+
+ cleanup_and_exit:
     
     BN_free(s);
     BN_free(B);

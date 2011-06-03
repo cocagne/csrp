@@ -19,5 +19,5 @@ The only dependency srp.c has is on the OpenSSL library.
 
 *** Compiling the example and test code ***
 
-gcc -o srp_example example.c -lssl
-gcc -o test_srp test_srp.c -lssl
+gcc -o srp_example example.c srp.c -lssl
+gcc -o test_srp test_srp.c srp.c -lssl
