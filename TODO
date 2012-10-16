@@ -1,0 +1,62 @@
+void srp_random_seed( const unsigned char * random_data, int data_length );
+
+
+In the comments for this function, it recommends providing random data be
+cryptographically strong.  This is probably not true, as cryptographically
+strong random input might be construed to imply 1 bit of entropy for each bit
+of input.  The actual requirement is that as many bits of entropy are supplied
+as needed to meet the security needs of the application.  So just as important
+as the quality of the unpredictable bits supplied, is the number of bits.
+There should be a minimum length recommendation, e.g., 256 bits (or something
+varying according to the strength of the hash function selected, e.g., if you
+use SHA-512, consider supplying at least 512 bits of entropy into the seed
+function to achieve 512-bits of security when using SRP.
+
+
+static void init_random()
+
+I noticed there is a hard-coded 256-bit buffer which is used to seed the RNG.
+Adding to the comment above, you might increase this to match the length of the
+largest supported hash function.  The gettimeofday fall back in the event of no
+good source of entropy is understandable, but dangerous as it essentially
+provides no security and does so silently.  A warning message, or an explicit
+flag to set to continue without good randomness might be worth adding.  The
+idea is similar to curl and wget's --no-check-certificate flag.  An interesting
+anecdote: Old versions of Netscape used timeofday to seed its SSL code, which
+of course enabled anyone to quickly determine the keys that were used.
+
+void srp_user_delete( struct SRPUser * usr )
+
+
+It is a common practice when handling passwords to clear the bits before
+freeing them to prevent other applications from requesting memory and ending up
+with the password in the newly allocated block.  You might consider doing this
+before the free at line 675.  This would apply to any other artifacts produced
+which incorporate the password deterministically, as they could enable brute
+force determination of the password.
+
+void  srp_user_process_challenge( struct SRPUser * usr,  
+                                  const unsigned char * bytes_s, int len_s,  
+                                  const unsigned char * bytes_B, int len_B, 
+                                  const unsigned char ** bytes_M, int * len_M )
+
+
+How big is B in the following: 
+        BN_sub(tmp1, B, tmp3);                  /* tmp1 = (B - K*(g^x)) */
+I am wondering if K*g^x might exceed the size of B and lead to a negative result.
+
+If the session keys are considered sensitive information, I would also advocate
+zeroing them before free.
+
+
+Note that I did not review everything, and I am not at all familiar with the
+implementation of SRP, but if it passes compatibility tests, I would be quite
+confident in its implementation correctness.
+
+* Consider using stanford's srp demo application to generate some  a valid
+  input => output pair to ensure correctness.
+
+* Consider using a password based key derivation function for generating
+  v (slows down brute-force attempts on compromised servers). 
+
+* Potentially scrypt could be used to prevent GPU-accellerated attacks
