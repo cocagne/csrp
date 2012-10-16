@@ -84,21 +84,21 @@ typedef enum
  * using cryptographically sound random data on Windows & Linux. If this is
  * undesirable behavior or the host OS does not provide a /dev/urandom file, 
  * this function may be called to seed the random number generator with 
- * alternate data. 
+ * alternate data.
+ *
+ * The random data should include at least as many bits of entropy as the
+ * largest hash function used by the application. So, for example, if a
+ * 512-bit hash function is used, the random data requies at least 512
+ * bits of entropy.
  * 
  * Passing a null pointer to this function will cause this library to skip
- * seeding the random number generator.
+ * seeding the random number generator. This is only legitimate if it is
+ * absolutely known that the OpenSSL random number generator has already
+ * been sufficiently seeded within the running application.
  * 
  * Notes: 
- *    * This function is optional on Windows & Linux.
- * 
- *    * This function is mandatory on all other platforms. Although it
- *      will appear to work on other platforms, this library uses the current
- *      time of day to seed the random number generator. This is well known to
- *      be insecure. 
- * 
- *    * When using this function, ensure the provided random data is
- *      cryptographically strong.
+ *    * This function is optional on Windows & Linux and mandatory on all
+ *      other platforms.
  */
 void srp_random_seed( const unsigned char * random_data, int data_length );
 

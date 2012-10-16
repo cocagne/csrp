@@ -411,15 +411,13 @@ static void init_random()
     if (g_initialized)
         return;
     
-    g_initialized = 1;
-    
 #ifdef WIN32
     HCRYPTPROV wctx;
 #else
     FILE   *fp   = 0;
 #endif
     
-    unsigned char buff[32];
+    unsigned char buff[64];
 
     
 #ifdef WIN32
@@ -429,6 +427,8 @@ static void init_random()
         CryptGenRandom(wctx, sizeof(buff), (BYTE*) buff);
         
         CryptReleaseContext(wctx, 0);
+
+        g_initialized = 1;
         
 #else
         fp = fopen("/dev/urandom", "r");
@@ -437,16 +437,12 @@ static void init_random()
         {
             fread(buff, sizeof(buff), 1, fp);
             fclose(fp);
-            
-        }
-        else
-        {
-            /* Dirty... but better than nothing. */
-            gettimeofday( (struct timeval *)buff, 0);
+            g_initialized = 1;
         }
 #endif
-    
-    RAND_seed( buff, sizeof(buff) );
+
+    if (g_initialized)
+       RAND_seed( buff, sizeof(buff) );
 }
 
 
@@ -635,6 +631,7 @@ void srp_verifier_delete( struct SRPVerifier * ver )
       delete_ng( ver->ng );
       free( (char *) ver->username );
       free( (unsigned char *) ver->bytes_B );
+      memset(ver, 0, sizeof(*ver));
       free( ver );
    }
 }
@@ -726,7 +723,10 @@ struct SRPUser * srp_user_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const 
        if (usr->username)
           free((void*)usr->username);
        if (usr->password)
+       {
+          memset((void*)usr->password, 0, usr->password_len);
           free((void*)usr->password);
+       }
        free(usr);
     }
     
@@ -744,13 +744,16 @@ void srp_user_delete( struct SRPUser * usr )
       BN_free( usr->S );
       
       delete_ng( usr->ng );
+
+      memset((void*)usr->password, 0, usr->password_len);
       
       free((char *)usr->username);
       free((char *)usr->password);
       
       if (usr->bytes_A) 
          free( (char *)usr->bytes_A );
-      
+
+      memset(usr, 0, sizeof(*usr));
       free( usr );
    }
 }
