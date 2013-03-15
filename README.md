@@ -41,7 +41,7 @@ understanding this library.
 Usage Example
 -------------
 
-```
+```c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
