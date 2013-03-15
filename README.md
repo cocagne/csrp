@@ -1,5 +1,6 @@
 csrp
 ====
+Tom Cocagne &lt;tom.cocagne@gmail.com&gt;
 
 csrp is a minimal C implementation of the [Secure Remote Password
 protocol](http://srp.stanford.edu/). The project consists of a single
