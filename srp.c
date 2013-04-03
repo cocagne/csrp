@@ -534,6 +534,7 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
     BN_CTX     *ctx  = BN_CTX_new();
     int         ulen = strlen(username) + 1;
     NGConstant *ng   = new_ng( ng_type, n_hex, g_hex );
+    struct SRPVerifier * ver = 0;
 
     *len_B   = 0;
     *bytes_B = 0;
@@ -541,7 +542,7 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
     if( !s || !v || !A || !B || !S || !b || !tmp1 || !tmp2 || !ctx || !ng )
        goto cleanup_and_exit;
     
-    struct SRPVerifier * ver = (struct SRPVerifier *) malloc( sizeof(struct SRPVerifier) );
+    ver = (struct SRPVerifier *) malloc( sizeof(struct SRPVerifier) );
 
     if (!ver)
        goto cleanup_and_exit;
