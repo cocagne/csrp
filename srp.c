@@ -521,20 +521,20 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
                                         const unsigned char ** bytes_B, int * len_B,
                                         const char * n_hex, const char * g_hex )
 {
-    BIGNUM     *s    = BN_bin2bn(bytes_s, len_s, NULL);
-    BIGNUM     *v    = BN_bin2bn(bytes_v, len_v, NULL);
-    BIGNUM     *A    = BN_bin2bn(bytes_A, len_A, NULL);
-    BIGNUM     *u    = 0;
-    BIGNUM     *B    = BN_new();
-    BIGNUM     *S    = BN_new();
-    BIGNUM     *b    = BN_new();
-    BIGNUM     *k    = 0;
-    BIGNUM     *tmp1 = BN_new();
-    BIGNUM     *tmp2 = BN_new();
-    BN_CTX     *ctx  = BN_CTX_new();
-    int         ulen = strlen(username) + 1;
-    NGConstant *ng   = new_ng( ng_type, n_hex, g_hex );
-    struct SRPVerifier * ver = 0;
+    BIGNUM             *s    = BN_bin2bn(bytes_s, len_s, NULL);
+    BIGNUM             *v    = BN_bin2bn(bytes_v, len_v, NULL);
+    BIGNUM             *A    = BN_bin2bn(bytes_A, len_A, NULL);
+    BIGNUM             *u    = 0;
+    BIGNUM             *B    = BN_new();
+    BIGNUM             *S    = BN_new();
+    BIGNUM             *b    = BN_new();
+    BIGNUM             *k    = 0;
+    BIGNUM             *tmp1 = BN_new();
+    BIGNUM             *tmp2 = BN_new();
+    BN_CTX             *ctx  = BN_CTX_new();
+    int                 ulen = strlen(username) + 1;
+    NGConstant         *ng   = new_ng( ng_type, n_hex, g_hex );
+    struct SRPVerifier *ver  = 0;
 
     *len_B   = 0;
     *bytes_B = 0;
