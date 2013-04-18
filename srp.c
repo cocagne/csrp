@@ -291,17 +291,19 @@ static int hash_length( SRP_HashAlgorithm alg )
 }
 
 
-static BIGNUM * H_nn( SRP_HashAlgorithm alg, const BIGNUM * n1, const BIGNUM * n2 )
+static BIGNUM * H_nn( SRP_HashAlgorithm alg, const BIGNUM * N, const BIGNUM * n1, const BIGNUM * n2 )
 {
     unsigned char   buff[ SHA512_DIGEST_LENGTH ];
+    int             len_N  = BN_num_bytes(N);
     int             len_n1 = BN_num_bytes(n1);
     int             len_n2 = BN_num_bytes(n2);
-    int             nbytes = len_n1 + len_n2;
+    int             nbytes = len_N * 2;
     unsigned char * bin    = (unsigned char *) malloc( nbytes );
     if (!bin)
        return 0;
-    BN_bn2bin(n1, bin);
-    BN_bn2bin(n2, bin + len_n1);
+    memset(bin, 0, nbytes);
+    BN_bn2bin(n1, bin + (len_N - len_n1));
+    BN_bn2bin(n2, bin + (len_N + len_N - len_n2));
     hash( alg, bin, nbytes, buff );
     free(bin);
     return BN_bin2bn(buff, hash_length(alg), NULL);
@@ -570,14 +572,14 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
     {
        BN_rand(b, 256, -1, 0);
        
-       k = H_nn(alg, ng->N, ng->g);
+       k = H_nn(alg, ng->N, ng->N, ng->g);
        
        /* B = kv + g^b */
        BN_mul(tmp1, k, v, ctx);
        BN_mod_exp(tmp2, ng->g, b, ng->N, ctx);
        BN_add(B, tmp1, tmp2);
        
-       u = H_nn(alg, A, B);
+       u = H_nn(alg, ng->N, A, B);
        
        /* S = (A *(v^u)) ^ b */
        BN_mod_exp(tmp1, v, u, ng->N, ctx);
@@ -844,7 +846,7 @@ void  srp_user_process_challenge( struct SRPUser * usr,
     if( !s || !B || !v || !tmp1 || !tmp2 || !tmp3 || !ctx )
        goto cleanup_and_exit;
     
-    u = H_nn(usr->hash_alg, usr->A, B);
+    u = H_nn(usr->hash_alg, usr->ng->N, usr->A, B);
 
     if (!u)
        goto cleanup_and_exit;
@@ -854,7 +856,7 @@ void  srp_user_process_challenge( struct SRPUser * usr,
     if (!x)
        goto cleanup_and_exit;
     
-    k = H_nn(usr->hash_alg, usr->ng->N, usr->ng->g);
+    k = H_nn(usr->hash_alg, usr->ng->N, usr->ng->N, usr->ng->g);
 
     if (!k)
        goto cleanup_and_exit;
