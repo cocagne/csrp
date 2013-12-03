@@ -78,13 +78,13 @@ int main( int argc, char * argv[] )
     {
         usr =  srp_user_new( alg, ng_type, username, 
                              (const unsigned char *)password, 
-                             strlen(password), n_hex, g_hex );
+                             strlen(password), n_hex, g_hex, 1 );
 
         srp_user_start_authentication( usr, &auth_username, &bytes_A, &len_A );
 
         /* User -> Host: (username, bytes_A) */
         ver =  srp_verifier_new( alg, ng_type, username, bytes_s, len_s, bytes_v, len_v, 
-                                 bytes_A, len_A, & bytes_B, &len_B, n_hex, g_hex );
+                                 bytes_A, len_A, & bytes_B, &len_B, n_hex, g_hex, 1 );
         
         if ( !bytes_B )
         {

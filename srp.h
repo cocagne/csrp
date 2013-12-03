@@ -109,6 +109,7 @@ void srp_random_seed( const unsigned char * random_data, int data_length );
  * 
  * The n_hex and g_hex parameters should be 0 unless SRP_NG_CUSTOM is used for ng_type.
  * If provided, they must contain ASCII text of the hexidecimal notation.
+ *
  */
 void srp_create_salted_verification_key( SRP_HashAlgorithm alg, 
                                          SRP_NGType ng_type, const char * username,
@@ -116,20 +117,25 @@ void srp_create_salted_verification_key( SRP_HashAlgorithm alg,
                                          const unsigned char ** bytes_s, int * len_s, 
                                          const unsigned char ** bytes_v, int * len_v,
                                          const char * n_hex, const char * g_hex );
-
+                                          
 
 /* Out: bytes_B, len_B.
  * 
  * On failure, bytes_B will be set to NULL and len_B will be set to 0
  * 
  * The n_hex and g_hex parameters should be 0 unless SRP_NG_CUSTOM is used for ng_type
+ *
+ * If rfc5054_compat is non-zero the resulting verifier will be RFC 5054 compaliant. This
+ * breaks compatibility with previous versions of the csrp library but is recommended
+ * for new code.
  */
 struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
                                         const unsigned char * bytes_s, int len_s, 
                                         const unsigned char * bytes_v, int len_v,
                                         const unsigned char * bytes_A, int len_A,
                                         const unsigned char ** bytes_B, int * len_B,
-                                        const char * n_hex, const char * g_hex );
+                                        const char * n_hex, const char * g_hex,
+                                        int rfc5054_compat );
 
 
 void                  srp_verifier_delete( struct SRPVerifier * ver );
@@ -154,10 +160,16 @@ void                  srp_verifier_verify_session( struct SRPVerifier * ver,
 
 /*******************************************************************************/
 
-/* The n_hex and g_hex parameters should be 0 unless SRP_NG_CUSTOM is used for ng_type */
+/* The n_hex and g_hex parameters should be 0 unless SRP_NG_CUSTOM is used for ng_type
+ *
+ * If rfc5054_compat is non-zero the resulting verifier will be RFC 5054 compaliant. This
+ * breaks compatibility with previous versions of the csrp library but is recommended
+ * for new code. 
+ */
 struct SRPUser *      srp_user_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
                                     const unsigned char * bytes_password, int len_password,
-                                    const char * n_hex, const char * g_hex );
+                                    const char * n_hex, const char * g_hex,
+                                    int rfc5054_compat );
                                     
 void                  srp_user_delete( struct SRPUser * usr );
 
