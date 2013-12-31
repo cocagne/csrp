@@ -629,9 +629,9 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
        calculate_H_AMK( alg, ver->H_AMK, A, ver->M, ver->session_key );
        
        *len_B   = BN_num_bytes(B);
-       *bytes_B = malloc( *len_B );
+       *bytes_B = (const unsigned char *)malloc( *len_B );
        
-       if( !*bytes_B )
+       if((const unsigned char *)*bytes_B != NULL)
        {
           free( (void*) ver->username );
           free( ver );
@@ -845,7 +845,7 @@ void  srp_user_start_authentication( struct SRPUser * usr, const char ** usernam
     BN_CTX_free(ctx);
     
     *len_A   = BN_num_bytes(usr->A);
-    *bytes_A = malloc( *len_A );
+    *bytes_A = (const unsigned char *)malloc( *len_A );
 
     if (!*bytes_A)
     {
