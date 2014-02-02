@@ -604,7 +604,7 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
        *len_B   = BN_num_bytes(B);
        *bytes_B = (const unsigned char *)malloc( *len_B );
 
-       if((const unsigned char *)*bytes_B != NULL)
+       if( !((const unsigned char *)*bytes_B) )
        {
           free( (void*) ver->username );
           free( ver );
