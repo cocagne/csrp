@@ -5,7 +5,7 @@
  *
  * The MIT License (MIT)
  * 
- * Copyright (c) 2013 Tom Cocagne
+ * Copyright (c) 2014 Tom Cocagne
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -64,6 +64,7 @@ struct SRPUser;
 typedef enum
 {
     SRP_NG_1024,
+    SRP_NG_1536,
     SRP_NG_2048,
     SRP_NG_4096,
     SRP_NG_8192,

@@ -9,7 +9,7 @@
 
 #define NITER          100
 #define TEST_HASH      SRP_SHA1
-#define TEST_NG        SRP_NG_1024
+#define TEST_NG        SRP_NG_1536
 
 unsigned long long get_usec()
 {
