@@ -322,6 +322,10 @@ static BIGNUM * H_nn_rfc5054( SRP_HashAlgorithm alg, const BIGNUM * N, const BIG
     unsigned char * bin    = (unsigned char *) malloc( nbytes );
     if (!bin)
        return 0;
+
+    if (len_n1 > len_N || len_n2 > len_N)
+        return 0;
+
     memset(bin, 0, nbytes);
     BN_bn2bin(n1, bin + (len_N - len_n1));
     BN_bn2bin(n2, bin + (len_N + len_N - len_n2));
