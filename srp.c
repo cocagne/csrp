@@ -629,6 +629,9 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
        BN_bn2bin( B, (unsigned char *) *bytes_B );
 
        ver->bytes_B = *bytes_B;
+    } else {
+       free(ver);
+       ver = 0;
     }
 
  cleanup_and_exit:
