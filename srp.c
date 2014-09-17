@@ -589,6 +589,13 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
        else
           k = H_nn_orig(alg, ng->N, ng->g);
 
+       if(!k)
+       {
+          free(ver);
+          ver = 0;
+          goto cleanup_and_exit;
+       }
+
        /* B = kv + g^b */
        if (rfc5054_compat)
        {
@@ -607,6 +614,13 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
           u = H_nn_rfc5054(alg, ng->N, A, B);
        else
           u = H_nn_orig(alg, A, B);
+
+       if(!u)
+       {
+          free(ver);
+          ver = 0;
+          goto cleanup_and_exit;
+       }
 
        /* S = (A *(v^u)) ^ b */
        BN_mod_exp(tmp1, v, u, ng->N, ctx);
