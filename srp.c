@@ -322,6 +322,10 @@ static BIGNUM * H_nn_rfc5054( SRP_HashAlgorithm alg, const BIGNUM * N, const BIG
     unsigned char * bin    = (unsigned char *) malloc( nbytes );
     if (!bin)
        return 0;
+
+    if (len_n1 > len_N || len_n2 > len_N)
+        return 0;
+
     memset(bin, 0, nbytes);
     BN_bn2bin(n1, bin + (len_N - len_n1));
     BN_bn2bin(n2, bin + (len_N + len_N - len_n2));
@@ -585,6 +589,13 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
        else
           k = H_nn_orig(alg, ng->N, ng->g);
 
+       if(!k)
+       {
+          free(ver);
+          ver = 0;
+          goto cleanup_and_exit;
+       }
+
        /* B = kv + g^b */
        if (rfc5054_compat)
        {
@@ -603,6 +614,13 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
           u = H_nn_rfc5054(alg, ng->N, A, B);
        else
           u = H_nn_orig(alg, A, B);
+
+       if(!u)
+       {
+          free(ver);
+          ver = 0;
+          goto cleanup_and_exit;
+       }
 
        /* S = (A *(v^u)) ^ b */
        BN_mod_exp(tmp1, v, u, ng->N, ctx);
@@ -629,6 +647,9 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
        BN_bn2bin( B, (unsigned char *) *bytes_B );
 
        ver->bytes_B = *bytes_B;
+    } else {
+       free(ver);
+       ver = 0;
     }
 
  cleanup_and_exit:
