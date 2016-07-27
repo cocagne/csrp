@@ -575,7 +575,7 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
        /* B = kv + g^b */
        BN_mul(tmp1, k, v, ctx);
        BN_mod_exp(tmp2, ng->g, b, ng->N, ctx);
-       BN_add(B, tmp1, tmp2);
+       BN_mod_add(B, tmp1, tmp2, ng->N, ctx);
        
        u = H_nn(alg, A, B);
        
