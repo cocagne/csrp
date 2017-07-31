@@ -408,9 +408,6 @@ static void calculate_H_AMK( SRP_HashAlgorithm alg, unsigned char *dest, const B
 
 static void init_random()
 {    
-    if (g_initialized)
-        return;
-    
 #ifdef WIN32
     HCRYPTPROV wctx;
 #else
@@ -419,6 +416,8 @@ static void init_random()
     
     unsigned char buff[64];
 
+    if (g_initialized)
+        return;
     
 #ifdef WIN32
 
