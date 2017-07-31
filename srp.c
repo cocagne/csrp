@@ -434,9 +434,9 @@ static void init_random()
         
         if (fp)
         {
-            fread(buff, sizeof(buff), 1, fp);
+            size_t read = fread(buff, sizeof(buff), 1, fp);
+            g_initialized = read == 1;
             fclose(fp);
-            g_initialized = 1;
         }
 #endif
 
