@@ -408,9 +408,6 @@ static void calculate_H_AMK( SRP_HashAlgorithm alg, unsigned char *dest, const B
 
 static void init_random()
 {    
-    if (g_initialized)
-        return;
-    
 #ifdef WIN32
     HCRYPTPROV wctx;
 #else
@@ -419,6 +416,8 @@ static void init_random()
     
     unsigned char buff[64];
 
+    if (g_initialized)
+        return;
     
 #ifdef WIN32
 
@@ -435,9 +434,9 @@ static void init_random()
         
         if (fp)
         {
-            fread(buff, sizeof(buff), 1, fp);
+            size_t read = fread(buff, sizeof(buff), 1, fp);
+            g_initialized = read == 1;
             fclose(fp);
-            g_initialized = 1;
         }
 #endif
 
@@ -590,7 +589,7 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
        calculate_H_AMK( alg, ver->H_AMK, A, ver->M, ver->session_key );
        
        *len_B   = BN_num_bytes(B);
-       *bytes_B = malloc( *len_B );
+       *bytes_B = (const unsigned char *) malloc( *len_B );
        
        if( !*bytes_B )
        {
@@ -804,7 +803,7 @@ void  srp_user_start_authentication( struct SRPUser * usr, const char ** usernam
     BN_CTX_free(ctx);
     
     *len_A   = BN_num_bytes(usr->A);
-    *bytes_A = malloc( *len_A );
+    *bytes_A = (const unsigned char *) malloc( *len_A );
 
     if (!*bytes_A)
     {
