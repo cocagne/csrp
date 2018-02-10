@@ -7,6 +7,15 @@ protocol](http://srp.stanford.edu/). The project consists of a single
 C file and is intended for direct inclusion into utilizing programs. 
 It's only dependency is OpenSSL.
 
+*NOTE* This SRP implementation was created before the hashing algoritim specified
+in RFC 5054 became the de-facto standard for interoperable SRP implementations.
+The rfc5054_compat branch of this repository uses the RFC 5054 hashing algorithms
+and is known to be compatible with other SRP implementations. If this version works
+for you, please consider submitting a patch to this library that implements both the
+original default and the RFC 5054 implementation to allow a single mainline version
+of this library going forward.
+
+
 SRP Overview
 ------------
 
@@ -39,14 +48,6 @@ protocol. As the APIs are virtually identical, the [pysrp
 documentation](http://pythonhosted.org/srp/) is an excellent reference for
 understanding this library.
 
-[NOTE]
-This SRP implementation was created before the hashing algoritim specified
-in RFC 5054 became the de-facto standard for interoperable SRP implementations.
-The rfc5054_compat branch of this repository uses the RFC 5054 hashing algorithms
-and is known to be compatible with other SRP implementations. If this version works
-for you, please consider submitting a patch to this library that implements both the
-original default and the RFC 5054 implementation to allow a single mainline version
-of this library going forward.
 
 Usage Example
 -------------
