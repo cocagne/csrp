@@ -161,8 +161,7 @@ static NGConstant * new_ng( SRP_NGType ng_type, const char * n_hex, const char *
     if ( ng_type != SRP_NG_CUSTOM )
     {
         int idx = ng_type;
-        if ( ng_type > SRP_NG_CUSTOM )
-           idx -= 1;
+        
         n_hex = global_Ng_constants[ idx ].n_hex;
         g_hex = global_Ng_constants[ idx ].g_hex;
     }
