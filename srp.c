@@ -27,7 +27,11 @@
  *
  */
 #ifdef WIN32
+# include <Windows.h>
 # include <Wincrypt.h>
+# ifdef X509_NAME
+#  undef X509_NAME
+# endif
 #else
 # include <sys/time.h>
 #endif
