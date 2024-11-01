@@ -114,9 +114,9 @@ void srp_random_seed( const unsigned char * random_data, int data_length );
  */
 void srp_create_salted_verification_key( SRP_HashAlgorithm alg, 
                                          SRP_NGType ng_type, const char * username,
-                                         const unsigned char * password, int len_password,
-                                         const unsigned char ** bytes_s, int * len_s, 
-                                         const unsigned char ** bytes_v, int * len_v,
+                                         const unsigned char * password, unsigned int len_password,
+                                         const unsigned char ** bytes_s, unsigned int * len_s, 
+                                         const unsigned char ** bytes_v, unsigned int * len_v,
                                          const char * n_hex, const char * g_hex );
                                           
 
@@ -131,10 +131,10 @@ void srp_create_salted_verification_key( SRP_HashAlgorithm alg,
  * for new code.
  */
 struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
-                                        const unsigned char * bytes_s, int len_s, 
-                                        const unsigned char * bytes_v, int len_v,
-                                        const unsigned char * bytes_A, int len_A,
-                                        const unsigned char ** bytes_B, int * len_B,
+                                        const unsigned char * bytes_s, unsigned int len_s,
+                                        const unsigned char * bytes_v, unsigned int len_v,
+                                        const unsigned char * bytes_A, unsigned int len_A,
+                                        const unsigned char ** bytes_B, unsigned int * len_B,
                                         const char * n_hex, const char * g_hex,
                                         int rfc5054_compat );
 
@@ -168,7 +168,7 @@ void                  srp_verifier_verify_session( struct SRPVerifier * ver,
  * for new code. 
  */
 struct SRPUser *      srp_user_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const char * username,
-                                    const unsigned char * bytes_password, int len_password,
+                                    const unsigned char * bytes_password, unsigned int len_password,
                                     const char * n_hex, const char * g_hex,
                                     int rfc5054_compat );
                                     
@@ -186,14 +186,14 @@ int                   srp_user_get_session_key_length( struct SRPUser * usr );
 
 /* Output: username, bytes_A, len_A */
 void                  srp_user_start_authentication( struct SRPUser * usr, const char ** username, 
-                                                     const unsigned char ** bytes_A, int * len_A );
+                                                     const unsigned char ** bytes_A, unsigned int * len_A );
 
 /* Output: bytes_M, len_M  (len_M may be null and will always be 
  *                          srp_user_get_session_key_length() bytes in size) */
 void                  srp_user_process_challenge( struct SRPUser * usr, 
-                                                  const unsigned char * bytes_s, int len_s, 
-                                                  const unsigned char * bytes_B, int len_B,
-                                                  const unsigned char ** bytes_M, int * len_M );
+                                                  const unsigned char * bytes_s, unsigned int len_s,
+                                                  const unsigned char * bytes_B, unsigned int len_B,
+                                                  const unsigned char ** bytes_M, unsigned int * len_M );
                                                   
 /* bytes_HAMK must be exactly srp_user_get_session_key_length() bytes in size */
 void                  srp_user_verify_session( struct SRPUser * usr, const unsigned char * bytes_HAMK );
