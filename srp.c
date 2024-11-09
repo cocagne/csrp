@@ -869,6 +869,18 @@ int                   srp_user_get_session_key_length( struct SRPUser * usr )
     return hash_length( usr->hash_alg );
 }
 
+const unsigned char * srp_user_get_h_amk( struct SRPUser * usr, int * h_length )
+{
+    if (h_length)
+        *h_length = hash_length( usr->hash_alg );
+    return usr->H_AMK;
+}
+
+int srp_user_get_h_amk_length( struct SRPUser * usr )
+{
+    return hash_length( usr->hash_alg );
+}
+
 /* Output: username, bytes_A, len_A */
 void  srp_user_start_authentication( struct SRPUser * usr, const char ** username, 
                                      const unsigned char ** bytes_A, unsigned int * len_A )
