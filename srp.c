@@ -394,19 +394,24 @@ static void update_hash_n( SRP_HashAlgorithm alg, HashCTX *ctx, const BIGNUM * n
     free(n_bytes);
 }
 
-static void hash_num( SRP_HashAlgorithm alg, const BIGNUM * n, unsigned char * dest )
+static void hash_num_pad( SRP_HashAlgorithm alg, const BIGNUM * n, unsigned char * dest, unsigned int padding )
 {
     unsigned int    nbytes = BN_num_bytes(n);
-    unsigned char * bin    = (unsigned char *) malloc( nbytes );
+    unsigned char * bin    = (unsigned char *) calloc( nbytes + padding, 1 );
     if(!bin)
        return;
-    BN_bn2bin(n, bin);
-    hash( alg, bin, nbytes, dest );
+    BN_bn2bin(n, bin + padding);
+    hash( alg, bin, nbytes + padding, dest );
     free(bin);
 }
 
+static void hash_num( SRP_HashAlgorithm alg, const BIGNUM * n, unsigned char * dest )
+{
+    hash_num_pad( alg, n, dest, 0 );
+}
+
 static bool calculate_M( SRP_HashAlgorithm alg, NGConstant *ng, unsigned char * dest, const char * I, const BIGNUM * s,
-                         const BIGNUM * A, const BIGNUM * B, const unsigned char * K )
+                         const BIGNUM * A, const BIGNUM * B, const unsigned char * K, int rfc5054_compat )
 {
     unsigned char H_N[ SHA512_DIGEST_LENGTH ];
     unsigned char H_g[ SHA512_DIGEST_LENGTH ];
@@ -415,12 +420,23 @@ static bool calculate_M( SRP_HashAlgorithm alg, NGConstant *ng, unsigned char * 
     HashCTX       ctx;
     int           i = 0;
     int           hash_len = hash_length(alg);
+    unsigned int  N_len = BN_num_bytes( ng->N );
+    unsigned int  g_len = BN_num_bytes( ng->g );
+    unsigned int  padding = 0;
     
     if (hash_len <= 0)
         return false;
     
+    if (rfc5054_compat != 0)
+    {
+        if (N_len < g_len)
+            return false;
+        
+        padding = N_len - g_len;
+    }
+    
     hash_num( alg, ng->N, H_N );
-    hash_num( alg, ng->g, H_g );
+    hash_num_pad( alg, ng->g, H_g, padding );
     hash(alg, (const unsigned char *)I, strlen(I), H_I);
 
     for (i=0; i < hash_len; i++ )
@@ -659,7 +675,7 @@ struct SRPVerifier *  srp_verifier_new( SRP_HashAlgorithm alg, SRP_NGType ng_typ
 
        hash_num(alg, S, ver->session_key);
 
-       if (calculate_M( alg, ng, ver->M, username, s, A, B, ver->session_key ) == false)
+       if (calculate_M( alg, ng, ver->M, username, s, A, B, ver->session_key, ver->rfc5054 ) == false)
        {
           free(ver);
           ver = 0;
@@ -968,7 +984,7 @@ void  srp_user_process_challenge( struct SRPUser * usr,
         BN_mod_exp(usr->S, tmp1, tmp2, usr->ng->N, ctx);
 
         hash_num(usr->hash_alg, usr->S, usr->session_key);
-        if (calculate_M( usr->hash_alg, usr->ng, usr->M, usr->username, s, usr->A, B, usr->session_key ) == false)
+        if (calculate_M( usr->hash_alg, usr->ng, usr->M, usr->username, s, usr->A, B, usr->session_key, usr->rfc5054 ) == false)
         {
             *bytes_M = NULL;
             if (len_M)
