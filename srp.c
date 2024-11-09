@@ -38,7 +38,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <openssl/bn.h>
 #include <openssl/sha.h>
 #include <openssl/crypto.h>
@@ -228,6 +227,8 @@ struct SRPUser
     unsigned char M           [SHA512_DIGEST_LENGTH];
     unsigned char H_AMK       [SHA512_DIGEST_LENGTH];
     unsigned char session_key [SHA512_DIGEST_LENGTH];
+    
+    bool no_username_in_x;
 };
 
 static int hash_init( SRP_HashAlgorithm alg, HashCTX *c )
@@ -362,14 +363,16 @@ static BIGNUM * H_ns( SRP_HashAlgorithm alg, const BIGNUM * n, const unsigned ch
     return BN_bin2bn(buff, (size_t)hash_len, NULL);
 }
 
-static BIGNUM * calculate_x( SRP_HashAlgorithm alg, const BIGNUM * salt, const char * username, const unsigned char * password, unsigned int password_len )
+static BIGNUM * calculate_x( SRP_HashAlgorithm alg, const BIGNUM * salt, const char * username, const unsigned char * password, unsigned int password_len, bool no_username_in_x )
 {
     unsigned char ucp_hash[SHA512_DIGEST_LENGTH];
     HashCTX       ctx;
 
     hash_init( alg, &ctx );
 
-    hash_update( alg, &ctx, username, strlen(username) );
+    if (!no_username_in_x)
+        hash_update( alg, &ctx, username, strlen(username) );
+    
     hash_update( alg, &ctx, ":", 1 );
     hash_update( alg, &ctx, password, password_len );
     hash_final( alg, &ctx, ucp_hash );
@@ -522,7 +525,7 @@ void srp_create_salted_verification_key( SRP_HashAlgorithm alg,
     init_random(); /* Only happens once */
 
     BN_rand(s, 32, -1, 0);
-    x = calculate_x( alg, s, username, password, len_password );
+    x = calculate_x( alg, s, username, password, len_password, false );
 
     if( !x )
        goto cleanup_and_exit;
@@ -790,6 +793,7 @@ struct SRPUser * srp_user_new( SRP_HashAlgorithm alg, SRP_NGType ng_type, const 
     usr->rfc5054 = rfc5054_compat;
 
     usr->bytes_A = 0;
+    usr->no_username_in_x = false;
 
     return usr;
 
@@ -914,7 +918,7 @@ void  srp_user_process_challenge( struct SRPUser * usr,
     if (!u)
        goto cleanup_and_exit;
 
-    x = calculate_x( usr->hash_alg, s, usr->username, usr->password, usr->password_len );
+    x = calculate_x( usr->hash_alg, s, usr->username, usr->password, usr->password_len, usr->no_username_in_x );
 
     if (!x)
        goto cleanup_and_exit;
@@ -984,4 +988,14 @@ void srp_user_verify_session( struct SRPUser * usr, const unsigned char * bytes_
     int hash_len = hash_length(usr->hash_alg);
     if ( hash_len > 0 && memcmp( usr->H_AMK, bytes_HAMK, (size_t)hash_len ) == 0 )
         usr->authenticated = 1;
+}
+
+void srp_user_set_no_username_in_x( struct SRPUser * usr, bool value )
+{
+    usr->no_username_in_x = value;
+}
+
+bool srp_user_get_no_username_in_x( struct SRPUser * usr )
+{
+    return usr->no_username_in_x;
 }
