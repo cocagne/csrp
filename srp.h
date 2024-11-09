@@ -57,6 +57,9 @@
 #ifndef SRP_H
 #define SRP_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct SRPVerifier;
 struct SRPUser;
@@ -197,5 +200,9 @@ void                  srp_user_process_challenge( struct SRPUser * usr,
                                                   
 /* bytes_HAMK must be exactly srp_user_get_session_key_length() bytes in size */
 void                  srp_user_verify_session( struct SRPUser * usr, const unsigned char * bytes_HAMK );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* Include Guard */
