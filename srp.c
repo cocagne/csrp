@@ -846,6 +846,17 @@ const char * srp_user_get_username( struct SRPUser * usr )
     return usr->username;
 }
 
+void srp_user_set_password( struct SRPUser * usr, const unsigned char * bytes_password, unsigned int len_password )
+{
+    memset((void*)usr->password, 0, usr->password_len);
+    free((char *)usr->password);
+    
+    usr->password     = (const unsigned char *) malloc(len_password);
+    usr->password_len = len_password;
+    
+    memcpy((char *)usr->password, bytes_password, len_password);
+}
+
 const unsigned char * srp_user_get_session_key( struct SRPUser * usr, int * key_length )
 {
     if (key_length)

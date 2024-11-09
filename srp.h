@@ -183,6 +183,7 @@ int                   srp_user_is_authenticated( struct SRPUser * usr);
 
 
 const char *          srp_user_get_username( struct SRPUser * usr );
+void                  srp_user_set_password( struct SRPUser * usr, const unsigned char * bytes_password, unsigned int len_password );
 
 /* key_length may be null */
 const unsigned char * srp_user_get_session_key( struct SRPUser * usr, int * key_length );
