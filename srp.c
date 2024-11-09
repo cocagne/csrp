@@ -457,7 +457,7 @@ static bool calculate_H_AMK( SRP_HashAlgorithm alg, unsigned char *dest, const B
 }
 
 
-static void init_random()
+static void init_random( void )
 {
     if (g_initialized)
         return;
